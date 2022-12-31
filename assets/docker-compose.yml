@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  web:
+    build: .
+    ports:
+      - "8000:5000"
+  app3:
+    image: "myapp:latest"
+  db-service:
+    image: "db:latest"
+  user-service:
+    image: "user-service:latest"
+    environment:
+      - SECRET=MYSECRET123
