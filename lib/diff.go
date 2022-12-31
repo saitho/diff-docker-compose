@@ -13,10 +13,11 @@ type YamlDiffEntry struct {
 type DiffType string
 
 const (
-	Unknown DiffType = "unknown"
-	Added            = "added"
-	Removed          = "removed"
-	Changed          = "changed"
+	Unknown   DiffType = "unknown"
+	Added              = "added"
+	Removed            = "removed"
+	Changed            = "changed"
+	Unchanged          = "unchanged"
 )
 
 func (e YamlDiffEntry) GetType() DiffType {
@@ -28,6 +29,9 @@ func (e YamlDiffEntry) GetType() DiffType {
 	}
 	if e.ValueOld != nil && e.ValueNew == nil {
 		return Removed
+	}
+	if reflect.DeepEqual(e.ValueNew, e.ValueOld) {
+		return Unchanged
 	}
 	return Changed
 }
