@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -47,7 +46,6 @@ func diffStructure(oldYaml map[string]interface{}, newYaml map[string]interface{
 		if diff.ValueOld != nil && reflect.TypeOf(diff.ValueOld).Kind() == reflect.Map && diff.ValueNew != nil && reflect.TypeOf(diff.ValueNew).Kind() == reflect.Map {
 			str.children = diffStructure(EnsureStringMap(diff.ValueOld), EnsureStringMap(diff.ValueNew), diff.Path)
 		}
-		fmt.Println(str.children)
 		structure[key] = str
 	}
 
