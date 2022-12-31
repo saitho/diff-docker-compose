@@ -37,17 +37,17 @@ Properties:
 
 Methods:
 * `HasChanged(path []string) bool`: returns true when there differences for the node
-* `Get(path []string) []YamlDiffEntry`: returns differences for the node identified by the selector (e.g. `Get([]string{"services"})` or `Get([]string{"services", "myapp"})`)
+* `GetAll(path []string) []YamlDiffEntry`: returns differences for the node identified by the selector (e.g. `GetAll([]string{"services"})` or `GetAll([]string{"services", "myapp"})`)
 * `GetStructure(path []string) *YamlDiffStructure`: returns the structure for the node identified by the path. Access the diff for that node or its children for diff information.
 
-*Note:* When a node is added, the whole node will be listed as difference in `YamlDiffEntry` (obtained via `Get()`).
+*Note:* When a node is added, the whole node will be listed as difference in `YamlDiffEntry` (obtained via `GetAll()`).
 If you need to traverse the node's children and look for changes, use `GetStructure`.
 
 Examples:
 
 ```go
 result := lib.DiffYaml(composeTemplate, composeActual)
-fmt.Println(result.Get([]string{"services"}))
+fmt.Println(result.GetAll([]string{"services"}))
 
 // this will get all differences of the "service" node
 fmt.Println(result.GetStructure([]string{"services"}).GetDiff())

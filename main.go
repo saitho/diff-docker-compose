@@ -63,7 +63,7 @@ func evaluateResults(result lib.YamlDiffResult) {
 	if !result.HasChanged([]string{"services"}) {
 		fmt.Println("Services have not changed.")
 	} else {
-		services := result.Get([]string{"services"})
+		services := result.GetAll([]string{"services"})
 		var addedServices []string
 		var removedServices []string
 		var modifiedServices []string

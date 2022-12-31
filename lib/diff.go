@@ -39,12 +39,18 @@ type YamlDiffResult struct {
 
 // HasChanged returns true when there differences for the node
 func (r YamlDiffResult) HasChanged(path []string) bool {
-	results := r.Get(path)
+	results := r.GetAll(path)
 	return len(results) > 0
 }
 
-// Get returns the differences for the node identified by the path
+// Get is deprecated. Use GetAll instead.
+// @deprecated
 func (r YamlDiffResult) Get(path []string) []YamlDiffEntry {
+	return r.GetAll(path)
+}
+
+// Get returns the differences for the node identified by the path
+func (r YamlDiffResult) GetAll(path []string) []YamlDiffEntry {
 	var entries []YamlDiffEntry
 	for _, diff := range r.Diffs {
 		exited := false
