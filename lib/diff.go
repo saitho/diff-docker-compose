@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -34,14 +33,17 @@ func (e YamlDiffEntry) GetType() DiffType {
 }
 
 type YamlDiffResult struct {
-	Diffs []YamlDiffEntry
+	Diffs     []YamlDiffEntry
+	Structure map[string]*YamlDiffStructure
 }
 
+// HasChanged returns true when there differences for the node
 func (r YamlDiffResult) HasChanged(path []string) bool {
 	results := r.Get(path)
 	return len(results) > 0
 }
 
+// Get returns the differences for the node identified by the path
 func (r YamlDiffResult) Get(path []string) []YamlDiffEntry {
 	var entries []YamlDiffEntry
 	for _, diff := range r.Diffs {
@@ -59,9 +61,37 @@ func (r YamlDiffResult) Get(path []string) []YamlDiffEntry {
 	return entries
 }
 
+// GetStructure returns the structure for the node identified by the path
+// Access the diff for that node or its children for diff information.
+func (r YamlDiffResult) GetStructure(path []string) *YamlDiffStructure {
+	currentMap := r.Structure
+	pathLevel := 0
+	running := true
+	for running {
+		running = false
+		for _, structure := range currentMap {
+			if len(path) <= pathLevel || len(structure.diff.Path) <= pathLevel {
+				break
+			}
+			if path[pathLevel] != structure.diff.Path[pathLevel] {
+				continue
+			}
+			pathLevel++
+			if pathLevel == len(path) {
+				return structure
+			}
+			currentMap = structure.children
+			running = true // keep running with next map level
+		}
+	}
+	return nil
+}
+
+// DiffYaml compares two map[string]interface{} objects (e.g. read via YAML parser).
 func DiffYaml(oldYaml map[string]interface{}, newYaml map[string]interface{}) YamlDiffResult {
 	result := YamlDiffResult{}
 	result.Diffs = diffYaml(oldYaml, newYaml, []string{})
+	result.Structure = diffStructure(oldYaml, newYaml, []string{})
 	return result
 }
 
@@ -69,25 +99,17 @@ func diffYaml(oldYaml map[string]interface{}, newYaml map[string]interface{}, cu
 	var diffs []YamlDiffEntry
 
 	for key, newVal := range newYaml {
-		diff := YamlDiffEntry{}
-		diff.Path = append(currentPath, key)
-		diff.ValueNew = newVal
+		diff := YamlDiffEntry{
+			Path:     append(currentPath, key),
+			ValueNew: newVal,
+		}
 		if oldVal, ok := oldYaml[key]; ok {
 			// key found in oldYaml -> node maybe changed
 			if reflect.DeepEqual(newVal, oldVal) {
 				continue // value did not change
 			}
 			if reflect.TypeOf(oldVal).Kind() == reflect.Map && reflect.TypeOf(oldVal).Kind() == reflect.Map {
-				oldValMap := oldVal
-				if reflect.TypeOf(oldVal).String() == "map[interface {}]interface {}" {
-					oldValMap = cleanUpInterfaceMap(oldVal.(map[interface{}]interface{}))
-				}
-				newValMap := newVal
-				if reflect.TypeOf(newVal).String() == "map[interface {}]interface {}" {
-					newValMap = cleanUpInterfaceMap(newVal.(map[interface{}]interface{}))
-				}
-
-				diffs = append(diffs, diffYaml(oldValMap.(map[string]interface{}), newValMap.(map[string]interface{}), append(currentPath, key))...)
+				diffs = append(diffs, diffYaml(EnsureStringMap(oldVal), EnsureStringMap(newVal), append(currentPath, key))...)
 			} else {
 				diff.ValueOld = oldVal
 				diffs = append(diffs, diff)
@@ -102,42 +124,14 @@ func diffYaml(oldYaml map[string]interface{}, newYaml map[string]interface{}, cu
 	// look for removed nodes
 	for key, oldVal := range oldYaml {
 		if _, ok := newYaml[key]; !ok {
-			diff := YamlDiffEntry{}
-			diff.Path = append(currentPath, key)
-			diff.ValueOld = oldVal
-			diff.ValueNew = nil
+			diff := YamlDiffEntry{
+				Path:     append(currentPath, key),
+				ValueOld: oldVal,
+				ValueNew: nil,
+			}
 			diffs = append(diffs, diff)
 		}
 	}
 
 	return diffs
-}
-
-// copied from https://github.com/elastic/beats/blob/6435194af9f42cbf778ca0a1a92276caf41a0da8/libbeat/common/mapstr.go
-func cleanUpInterfaceMap(in map[interface{}]interface{}) map[string]interface{} {
-	result := map[string]interface{}{}
-	for k, v := range in {
-		result[fmt.Sprintf("%v", k)] = cleanUpMapValue(v)
-	}
-	return result
-}
-
-func cleanUpMapValue(v interface{}) interface{} {
-	switch v := v.(type) {
-	case []interface{}:
-		return cleanUpInterfaceArray(v)
-	case map[interface{}]interface{}:
-		return cleanUpInterfaceMap(v)
-	case string:
-		return v
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-}
-func cleanUpInterfaceArray(in []interface{}) []interface{} {
-	result := make([]interface{}, len(in))
-	for i, v := range in {
-		result[i] = cleanUpMapValue(v)
-	}
-	return result
 }
