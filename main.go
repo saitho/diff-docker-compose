@@ -55,7 +55,7 @@ func main() {
 		exitInvalidArgument(err)
 	}
 
-	result := lib.DiffYaml(nil, composeActual)
+	result := lib.DiffYaml(composeTemplate, composeActual)
 	evaluateResults(result)
 }
 
