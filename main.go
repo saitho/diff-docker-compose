@@ -55,7 +55,7 @@ func main() {
 		exitInvalidArgument(err)
 	}
 
-	result := lib.DiffYaml(composeTemplate, composeActual)
+	result := lib.DiffYaml(nil, composeActual)
 	evaluateResults(result)
 }
 
@@ -63,13 +63,12 @@ func evaluateResults(result lib.YamlDiffResult) {
 	if !result.HasChanged([]string{"services"}) {
 		fmt.Println("Services have not changed.")
 	} else {
-		services := result.GetAll([]string{"services"})
+		services := result.GetStructure([]string{"services"})
 		var addedServices []string
 		var removedServices []string
 		var modifiedServices []string
-		for _, service := range services {
-			serviceName := service.Path[1] // first index is "services", second is service name
-			switch service.GetType() {
+		for serviceName, service := range services.GetChildren() {
+			switch service.GetDiff().GetType() {
 			case lib.Added:
 				addedServices = append(addedServices, serviceName)
 				break

@@ -43,9 +43,16 @@ func diffStructure(oldYaml map[string]interface{}, newYaml map[string]interface{
 			name: key,
 			diff: diff,
 		}
-		if diff.ValueOld != nil && reflect.TypeOf(diff.ValueOld).Kind() == reflect.Map && diff.ValueNew != nil && reflect.TypeOf(diff.ValueNew).Kind() == reflect.Map {
-			str.children = diffStructure(EnsureStringMap(diff.ValueOld), EnsureStringMap(diff.ValueNew), diff.Path)
+
+		var diffMapOld map[string]interface{}
+		if diff.ValueOld != nil && reflect.TypeOf(diff.ValueOld).Kind() == reflect.Map {
+			diffMapOld = EnsureStringMap(diff.ValueOld)
 		}
+		var diffMapNew map[string]interface{}
+		if diff.ValueNew != nil && reflect.TypeOf(diff.ValueNew).Kind() == reflect.Map {
+			diffMapNew = EnsureStringMap(diff.ValueNew)
+		}
+		str.children = diffStructure(diffMapOld, diffMapNew, diff.Path)
 		structure[key] = str
 	}
 
