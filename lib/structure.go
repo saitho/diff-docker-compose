@@ -59,13 +59,19 @@ func diffStructure(oldYaml map[string]interface{}, newYaml map[string]interface{
 	// look for removed nodes
 	for key, oldVal := range oldYaml {
 		if _, ok := newYaml[key]; !ok {
+			diff := YamlDiffEntry{
+				Path:     append(currentPath, key),
+				ValueOld: oldVal,
+				ValueNew: nil,
+			}
+			var diffMapOld map[string]interface{}
+			if diff.ValueOld != nil && reflect.TypeOf(diff.ValueOld).Kind() == reflect.Map {
+				diffMapOld = EnsureStringMap(diff.ValueOld)
+			}
 			str := &YamlDiffStructure{
-				name: key,
-				diff: YamlDiffEntry{
-					Path:     append(currentPath, key),
-					ValueOld: oldVal,
-					ValueNew: nil,
-				},
+				name:     key,
+				diff:     diff,
+				children: diffStructure(diffMapOld, nil, diff.Path),
 			}
 			structure[key] = str
 		}
